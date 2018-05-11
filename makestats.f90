@@ -1,38 +1,60 @@
 program makestats
   implicit none
   integer, parameter                        :: dp=selected_real_kind(15,300)
-  real (kind=dp)                            :: final_energy
-  integer                                   :: ios, i, j, ierr, Ca_num, Mg_num
-  character(len=8)                          :: num_string
-  character(len=30)                         :: line
-  real (kind=dp), dimension(:), allocatable :: all_temps
+  real (kind=dp)                            :: final_energy, Xx_energy, Yy_energy
+  integer                                   :: ios, i, metalnum
+  character(len=2)                          :: metal1, metal2, num_string
+  character(len=10)                         :: i_string, j_string
+  character(len=1024)                       :: filename1, filename2
 
-  ! print*, "Provide the temperature set in the equilibrium phase"
+  read*, metal1
+  read*, metal2
+  read*, metalnum
   read*, num_string
-  read*, Mg_num
-  Ca_num = 8 - Mg_num
-  ! write(num_string,'(I1)') Mg_num
 
-  open(unit=11, file=num_string//"/finalenergy.dat", status="old", action="read", iostat=ios)
-  if (ios /= 0) stop "Error opening file 11"
-  open(unit=12, file=num_string//"/MgO.castep", status="old", action="read", iostat=ios)
-  if (ios /= 0) stop "Error opening file 12"
   open(unit=21, file="rel_energies.dat", iostat=ios, position='append')
   if (ios /= 0) stop "Error opening file 21"
 
-  read(11,*,iostat=ios) final_energy
+  filename1=metal1//trim(num_string)//metal2//"0O"//trim(num_string)//"/finalenergy.dat"
+  filename2=metal1//"0"//metal2//trim(num_string)//"O"//trim(num_string)//"/finalenergy.dat"
+  !OPEN FINAL ENERGIES FOR PURE MATERIALS
+  open(unit=11,file=trim(filename1), status="old", action="read", iostat=ios)
+  if (ios /= 0) stop "Error opening file 11"
+  open(unit=12, file=trim(filename2), status="old", action="read", iostat=ios)
+  if (ios /= 0) stop "Error opening file 12"
+
+  !READ FINAL ENERGIES FOR PURE MATERIALS
+  read(11,*,iostat=ios) Xx_energy
+  if (ios /= 0) stop "Error reading file 11"
+  read(12,*,iostat=ios) Yy_energy
   if (ios /= 0) stop "Error reading file 11"
 
-!  write(21,*) "      # of Mg     # of Ca             E  "
-  write(21,*) Mg_num, Ca_num, final_energy + (Mg_num/8.0_dp)*16342.75717190_dp + (Ca_num/8.0_dp)*11566.10097059_dp
+  write(21,*) metalnum, 0, 0.0_dp
 
   close(unit=11, iostat=ios)
   if ( ios /= 0 ) stop "Error closing file unit 11"
-
   close(unit=12, iostat=ios)
-  if ( ios /= 0 ) stop "Error closing file unit 12"
+  if ( ios /= 0 ) stop "Error closing file unit 21"
+
+  do i=1,metalnum-1
+    write (j_string,'(I0)') metalnum-i
+    write (i_string,'(I0)') i
+    filename1=metal1//trim(j_string)//metal2//trim(i_string)//"O"//trim(num_string)//"/finalenergy.dat"
+    open(unit=11, file=trim(filename1), status="old", action="read", iostat=ios)
+    if (ios /= 0) stop "Error opening file 11"
+
+    read(11,*,iostat=ios) final_energy
+    if (ios /= 0) stop "Error reading file 11"
+
+    write(21,*) metalnum-i, i, final_energy - (1.0_dp*(metalnum-i)/metalnum)*Xx_energy - (1.0_dp*i/metalnum)*Yy_energy
+
+    close(unit=11, iostat=ios)
+    if ( ios /= 0 ) stop "Error closing file unit 11"
+  enddo
+
+  write(21,*) 0, metalnum, 0.0_dp
+
 
   close(unit=21, iostat=ios)
   if ( ios /= 0 ) stop "Error closing file unit 21"
-
 end program makestats

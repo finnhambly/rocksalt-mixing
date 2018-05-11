@@ -1,3 +1,5 @@
+#!/bin/bash
+cat > MgO.param <<EOL
   comment            : MgO
   task               : SinglePoint  ! don't change the geometry
   xc_functional      : LDA
@@ -22,3 +24,4 @@
   mixing_scheme      : pulay
   smearing_width     : 0.2
   mix_history_length : 30
+EOL
